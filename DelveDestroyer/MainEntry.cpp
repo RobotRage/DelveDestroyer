@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include <Windows.h>
 #include <vector>
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 bool shoot = false;
@@ -19,8 +20,18 @@ struct Player
 	double pos[2];			//0 = position x, 1 = position y
 	GLfloat Triangle[3];	//0 = left point, 1 = top point, 2 = right point
 	double speed;
-	bool move[4]; // 0 = left, 1 = right, 2 = down 3 = up
+	bool move[4];			// 0 = left, 1 = right, 2 = down 3 = up
 }Player, control;
+
+struct WallPoints
+{
+	bool active = false;
+	double pos[2];			//0 = position x, 1 = position y
+	GLfloat Line[1];
+};
+
+std::vector<WallPoints> LeftP;
+std::vector<WallPoints> RightP;
 
 struct Bullet
 {
@@ -35,10 +46,9 @@ void RenderObjects()
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glLineWidth(1);
-	glColor3f(1.0, 1.0, 1.0);
+	glLineWidth(4);
+	glColor3f(.0, 1.0, 0);
 
-	//render player//
 	glBegin(GL_TRIANGLES);
 	glVertex3f(Player.Triangle[0] + Player.pos[0], 0 + Player.pos[1], 0);
 	glVertex3f(0 + Player.pos[0], Player.Triangle[1] + Player.pos[1], 0);
@@ -49,11 +59,30 @@ void RenderObjects()
 	{
 		if (bullets[i].active == true)
 		{
-			glLineWidth(3);
-			//printf("%d\n", i);
+			glLineWidth(4);
 			glBegin(GL_LINES);
 			glVertex3f(bullets[i].pos[0], bullets[i].pos[1], 0);
 			glVertex3f(bullets[i].pos[0], bullets[i].pos[1] + 0.05, 0);
+			glEnd();
+		}
+	}
+
+	for (int i = 0; i < RightP.size(); i++)
+	{
+		if (RightP[i].active && i >0)
+		{
+
+			glBegin(GL_LINES);
+			glVertex3f(RightP[i-1].pos[0], RightP[i-1].pos[1], 0);
+			glVertex3f(RightP[i].pos[0], RightP[i].pos[1], 0);
+			glEnd();
+		}
+		if (LeftP[i].active && i > 0)
+		{
+
+			glBegin(GL_LINES);
+			glVertex3f(LeftP[i - 1].pos[0], LeftP[i - 1].pos[1], 0);
+			glVertex3f(LeftP[i].pos[0], LeftP[i].pos[1], 0);
 			glEnd();
 		}
 	}
@@ -74,9 +103,6 @@ void instantiateBullet()
 
 			bullets[i].Line[0] = 0.0;
 			bullets[i].Line[1] = 0.05;
-
-			//printf("isactive? %d\n", bullets[i].active);
-			//printf("%d\n", i);
 			break;
 		}
 	}
@@ -90,15 +116,59 @@ void bulletController()
 		{
 			bullets[i].pos[1] = bullets[i].pos[1] + bullets[i].speed;
 		}
-		if (bullets[i].pos[1] >= 0.9)
+		if (bullets[i].pos[1] >= 1)
 		{
-			//bullets[i].active = false;
 			bullets.erase(bullets.begin() + i);
 			break;
 		}
 	}
 }
 
+void GenWalls(double wallMoveSpeed)
+{
+
+	double wallDistY = 0.2;
+
+	if (RightP.size() < 12)
+	{
+		RightP.push_back(WallPoints());
+		LeftP.push_back(WallPoints());
+	}
+
+	for (int i = 0; i < RightP.size(); i++)
+	{
+		RightP[i].pos[1] -= wallMoveSpeed;
+		LeftP[i].pos[1] -= wallMoveSpeed;
+
+		if (i != 0)
+		{
+			if (!RightP[i].active)
+			{
+				double rnd = rand() % 300;
+				rnd = rnd / 1000;
+				RightP[i].pos[0] = rnd + 0.5;	 
+			}
+			if (!LeftP[i].active)
+			{
+				double rnd = rand() % 300;
+				rnd = rnd / 1000;
+				LeftP[i].pos[0] = rnd - 0.5;
+			}
+			RightP[i].pos[1] = RightP[i - 1].pos[1] + wallDistY;
+			RightP[i].active = true;
+
+			LeftP[i].pos[1] = LeftP[i - 1].pos[1] + wallDistY;
+			LeftP[i].active = true;
+
+			if (RightP[i - 1].pos[1] <= - 1 - wallDistY | LeftP[i - 1].pos[1] <= -1 - wallDistY)
+			{
+				RightP.erase(RightP.begin() + i -1 );
+				LeftP.erase(LeftP.begin() + i -1 );            
+				break;			
+			}
+		}
+	}
+}
 
 // Called every tick
 void Update()
@@ -116,24 +186,23 @@ void Update()
 		}
 		if (Player.move[2])
 		{
-			Player.pos[1] -= Player.speed;
+			if(Player.pos[1] > -1)
+				Player.pos[1] -= Player.speed;
 		}
 		if (Player.move[3])
 		{
-			Player.pos[1] += Player.speed;
+			if(Player.pos[1] < 1 - control.Triangle[1])
+				Player.pos[1] += Player.speed;
 		}
 	}
 #pragma endregion
-
-
+	GenWalls(0.025);
 	bulletController();
 }
 
-
-
-
 int main(void)
 {
+	srand(time(NULL));
 	GLFWwindow* window;
 
 	if (!glfwInit())
@@ -150,8 +219,6 @@ int main(void)
 	}
 
 	glfwSetKeyCallback(window, key_callback);
-
-
 
 	glfwMakeContextCurrent(window);
 	double updateDel = 0.01f;
@@ -170,6 +237,17 @@ int main(void)
 
 	Player.pos[0] = 0;
 	Player.pos[1] = -0.7;
+
+	RightP.push_back(WallPoints());
+	LeftP.push_back(WallPoints());
+
+	RightP[0].pos[0] = 0.95;
+	RightP[0].pos[1] = -1;
+	LeftP[0].pos[0] = -0.95;
+	LeftP[0].pos[1] = -1;
+
+	RightP[0].active = true;
+	LeftP[0].active = true;
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -203,47 +281,46 @@ int main(void)
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	char c = key;
-	//printf("%d\n", key);
 
 #pragma region
 
-	if (key == 263 | key == 65 && action == GLFW_REPEAT | action == GLFW_PRESS) // left arrow key or a
+	if (key == 263 | key == 65 && action == GLFW_REPEAT | action == GLFW_PRESS) 
 	{
 		Player.move[0] = true;
 	}
-	else if (key == 263 | key == 65 && action == GLFW_RELEASE) // left arrow key or a
+	else if (key == 263 | key == 65 && action == GLFW_RELEASE)
 	{
 		Player.move[0] = false;
 	}
 
-	if (key == 262 | key == 68 && action == GLFW_REPEAT | action == GLFW_PRESS) // left arrow key or a
+	if (key == 262 | key == 68 && action == GLFW_REPEAT | action == GLFW_PRESS) 
 	{
 		Player.move[1] = true;
 	}
-	else if (key == 262 | key == 68 && action == GLFW_RELEASE) // left arrow key or a
+	else if (key == 262 | key == 68 && action == GLFW_RELEASE)
 	{
 		Player.move[1] = false;
 	}
 
-	if (key == 265 | key == 87 && action == GLFW_REPEAT | action == GLFW_PRESS) // left arrow key or a
+	if (key == 265 | key == 87 && action == GLFW_REPEAT | action == GLFW_PRESS) 
 	{
 		Player.move[3] = true;
 	}
-	else if (key == 265 | key == 87 && action == GLFW_RELEASE) // left arrow key or a
+	else if (key == 265 | key == 87 && action == GLFW_RELEASE) 
 	{
 		Player.move[3] = false;
 	}
 
-	if (key == 264 | key == 83 && action == GLFW_REPEAT | action == GLFW_PRESS) // left arrow key or a
+	if (key == 264 | key == 83 && action == GLFW_REPEAT | action == GLFW_PRESS) 
 	{
 		Player.move[2] = true;
 	}
-	else if (key == 264 | key == 83 && action == GLFW_RELEASE) // left arrow key or a
+	else if (key == 264 | key == 83 && action == GLFW_RELEASE)
 	{
 		Player.move[2] = false;
 	}
 
-	if (key == 32 && action == GLFW_PRESS) // left arrow key or a
+	if (key == 32 && action == GLFW_PRESS)
 	{
 		instantiateBullet();		
 	}
