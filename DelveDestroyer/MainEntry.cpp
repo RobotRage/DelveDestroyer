@@ -53,14 +53,22 @@ std::vector<Bullet> bullets;
 
 struct Boulders
 {
+	double centre[1];
 	bool active = false;
-	double pos[1];
 	GLfloat Point[8][2];
 	double speed;
+
+	double slope;
+	double b;
 };
 
 std::vector<Boulders> Boulder;
-
+void CollisionController()
+{
+	hit = true;
+	Player.pos[0] = 0;
+	Player.pos[1] = -0.7;
+}
 void RenderObjects()
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -121,7 +129,7 @@ void RenderObjects()
 		if (Boulder[i].active)
 		{
 			
-			glBegin(GL_POLYGON);			
+			glBegin(GL_LINE_STRIP);			
 			glVertex3f(Boulder[i].Point[0][0], Boulder[i].Point[0][1], 0);
 			glVertex3f(Boulder[i].Point[1][0], Boulder[i].Point[1][1], 0);
 			glVertex3f(Boulder[i].Point[2][0], Boulder[i].Point[2][1], 0);
@@ -129,7 +137,8 @@ void RenderObjects()
 			glVertex3f(Boulder[i].Point[4][0], Boulder[i].Point[4][1], 0);
 			glVertex3f(Boulder[i].Point[5][0], Boulder[i].Point[5][1], 0);
 			glVertex3f(Boulder[i].Point[6][0], Boulder[i].Point[6][1], 0);
-			glVertex3f(Boulder[i].Point[7][0], Boulder[i].Point[7][1], 0);			
+			glVertex3f(Boulder[i].Point[7][0], Boulder[i].Point[7][1], 0);		
+			glVertex3f(Boulder[i].Point[0][0], Boulder[i].Point[0][1], 0);
 			glEnd();
 		}
 	}
@@ -153,40 +162,78 @@ void debugRenderPoint(double x, double y)
 	glEnd();
 }
 
+void BoulderController()
+{
+	for (int i = 0; i < Boulder.size(); i++)
+	{
+		for (int j = 0; j <= sizeof(Boulder[i].Point) / sizeof(Boulder[i].Point[0]); j++)
+		{
+			if (j > 0)
+			{
+				double slopeR = (Boulder[i].Point[j][1] - Boulder[i].Point[j - 1][1]) / (Boulder[i].Point[j][0] - Boulder[i].Point[j - 1][0]);
+				double bR = Boulder[i].Point[j][1] - (slopeR * Boulder[i].Point[j][0]);
 
+				Boulder[i].slope = slopeR;
+				Boulder[i].b = bR;
+
+				if (equalRound(Player.pos[1], (slopeR * (Player.pos[0]) + bR), 0.10))
+				{
+					if (((Player.pos[0] >= Boulder[i].Point[4][0] && Player.pos[0] <= Boulder[i].Point[0][0]) && (Player.pos[1] >= Boulder[i].Point[6][1] && Player.pos[1] <= Boulder[i].Point[2][1])))
+					{
+						CollisionController();
+						//bullets.erase(bullets.begin() + i);
+					}
+					else if (equalRound(Player.pos[0], Boulder[i].Point[4][0], 0.001) && (equalRound(Player.pos[1], Boulder[i].Point[4][1], 0.001)))
+					{
+						CollisionController();
+					}
+					else if (equalRound(Player.pos[1], Boulder[i].Point[6][1], 0.001) && (equalRound(Player.pos[1], Boulder[i].Point[2][1], 0.001)))
+					{
+						CollisionController();
+					}
+				}
+			}
+			Boulder[i].Point[j][1] = Boulder[i].Point[j][1] - Boulder[i].speed;
+
+			if (Boulder[i].Point[j][1] < -1.3)
+			{
+				Boulder.erase(Boulder.begin() + i);
+			}
+		}
+	}
+}
 
 void instantiateBoulder()
 {
-	if (Boulder.size() < 1)
+	if (Boulder.size() < 10)
 	{
-		Boulder.push_back(Boulders());
-	}
-
-	for (int i = 0; i < Boulder.size(); i++)
-	{
-		if (!Boulder[i].active)
+		Boulder.push_back(Boulders()); 
+		for (int i = 0; i < Boulder.size(); i++)
 		{
-			Boulder[i].active = true;
-			Boulder[i].speed = (rand() % 300 + 100) / 1000;
-
-			Boulder[i].pos[0] = (rand() % 100 - 50) / 100;
-			Boulder[i].pos[1] = 0.9;
-
-			for (int j = 0; j <= sizeof(Boulder[i].Point) / sizeof(Boulder[i].Point[0]) ; j++)
+			if (!Boulder[i].active)
 			{
-				double xcos = 4 * cos( (j * 45) *  3.14159265359 / 180);
-				double ysin = -3 * sin( (j * 45) *  3.14159265359 / 180);
 
-				double xDash = xcos - ysin;
-				Boulder[i].Point[j][0] = xDash / 10;
+				Boulder[i].active = true;
 
-				double xsin = 4 * sin( (j * 45) *  3.14159265359 / 180);
-				double ycos = -3 * cos( (j * 45) *  3.14159265359 / 180);
+				double pos = rand() % 100 - 50;
+				double speed = rand() % 100 + 50;
 
-				double yDash = xsin + ycos;
-				Boulder[i].Point[j][1] = yDash/ 10;
+				Boulder[i].speed = speed / 10000;
 
-				printf("Point %d: X: %lf Y: %lf\n", j, xDash, yDash);
+				for (int j = 0; j <= sizeof(Boulder[i].Point) / sizeof(Boulder[i].Point[0]); j++)
+				{
+					double xcos = 0.5 * cos((j * 45) *  3.14159265359 / 180);
+					double ysin = 0.5 * sin((j * 45) *  3.14159265359 / 180);
+
+					double xDash = xcos - ysin;
+					Boulder[i].Point[j][0] = (xDash / 10) + pos / 100;
+
+					double xsin = 0.5 * sin((j * 45) *  3.14159265359 / 180);
+					double ycos = 0.5 * cos((j * 45) *  3.14159265359 / 180);
+
+					double yDash = xsin + ycos;
+					Boulder[i].Point[j][1] = (yDash / 10) + 1.2;
+				}
 			}
 		}
 	}
@@ -228,17 +275,46 @@ void bulletController()
 		}	
 	}
 }
-void CollisionController()
-{
-	hit = true;
-	Player.pos[0] = 0;
-	Player.pos[1] = -0.7;
-}
+
 
 void QuickUpdate()
 {
 	for (int i = 0; i < bullets.size(); i++)
 	{
+		for (int f = 0; f < Boulder.size(); f++)
+		{
+			for (int j = 0; j <= sizeof(Boulder[f].Point) / sizeof(Boulder[f].Point[0]); j++)
+			{
+				if (j > 0)
+				{
+					double slopeR = (Boulder[f].Point[j][1] - Boulder[f].Point[j - 1][1]) / (Boulder[f].Point[j][0] - Boulder[f].Point[j - 1][0]);
+					double bR = Boulder[f].Point[j][1] - (slopeR * Boulder[f].Point[j][0]);
+
+					if (equalRound(bullets[i].pos[1], (slopeR * (bullets[i].pos[0]) + bR), 0.10))
+					{
+						//printf("2 %lf  :  6 %lf\n", Boulder[f].Point[2][1], Boulder[f].Point[6][1]);
+		
+						if (   ((bullets[i].pos[0] >= Boulder[f].Point[4][0] && bullets[i].pos[0] <= Boulder[f].Point[0][0]) && (bullets[i].pos[1] >= Boulder[f].Point[6][1] && bullets[i].pos[1] <= Boulder[f].Point[2][1]) ) )
+						{
+							Boulder[f].active = false;
+							//bullets.erase(bullets.begin() + i);
+							bullets[i].active = false;
+							break;
+						}
+						else if(equalRound(bullets[i].pos[0], Boulder[f].Point[4][0], 0.05) && (equalRound(bullets[i].pos[1], Boulder[f].Point[4][1], 0.05)))
+						{
+							Boulder[f].active = false;
+							break;
+						}
+						else if (equalRound(bullets[i].pos[1], Boulder[f].Point[6][1], 0.05) && (equalRound(bullets[i].pos[1], Boulder[f].Point[2][1], 0.05)))
+						{
+							Boulder[f].active = false;
+						}
+					}					
+				}
+			}
+		}
+
 		for (int j = 0; j < RightP.size(); j++)
 		{
 			if (equalRound(bullets[i].pos[1], (RightP[j].WallVal.slope * (bullets[i].pos[0]) + RightP[j].WallVal.b), 0.10) && j != 0)
@@ -257,6 +333,13 @@ void QuickUpdate()
 					break;
 				}
 			}
+		}
+
+		
+		if (!bullets[i].active)
+		{
+			bullets.erase(bullets.begin() + i);
+			break;
 		}
 	}
 	for (int i = 0; i < RightP.size(); i++)
@@ -386,7 +469,7 @@ void Update()
 		}
 	}
 #pragma endregion
-
+	BoulderController();
 	instantiateBoulder();
 	GenWalls(0.005);
 	bulletController();
