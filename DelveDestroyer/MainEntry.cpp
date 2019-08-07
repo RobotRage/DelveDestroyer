@@ -10,6 +10,7 @@
 #include <Windows.h>
 #include <vector>
 
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 bool shoot = false;
@@ -50,6 +51,16 @@ struct Bullet
 };
 std::vector<Bullet> bullets;
 
+struct Boulders
+{
+	bool active = false;
+	double pos[1];
+	GLfloat Point[8][1];
+	double speed;
+};
+
+std::vector<Boulders> Boulder;
+
 void RenderObjects()
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -66,6 +77,7 @@ void RenderObjects()
 	{
 		//lColor3f(.0, 1.0, 0);
 	}
+
 	glBegin(GL_TRIANGLES);
 	glVertex3f(Player.Triangle[0] + Player.pos[0], 0 + Player.pos[1], 0);
 	glVertex3f(0 + Player.pos[0], Player.Triangle[1] + Player.pos[1], 0);
@@ -103,6 +115,24 @@ void RenderObjects()
 			glEnd();
 		}
 	}
+
+	for (int i = 0; i < Boulder.size(); i++)
+	{
+		if (Boulder[i].active)
+		{
+			
+			glBegin(GL_POLYGON);			
+			glVertex3f(Boulder[i].Point[0][0], Boulder[i].Point[0][1], 0);
+			glVertex3f(Boulder[i].Point[1][0], Boulder[i].Point[1][1], 0);
+			glVertex3f(Boulder[i].Point[2][0], Boulder[i].Point[2][1], 0);
+			glVertex3f(Boulder[i].Point[3][0], Boulder[i].Point[3][1], 0);
+			glVertex3f(Boulder[i].Point[4][0], Boulder[i].Point[4][1], 0);
+			glVertex3f(Boulder[i].Point[5][0], Boulder[i].Point[5][1], 0);
+			glVertex3f(Boulder[i].Point[6][0], Boulder[i].Point[6][1], 0);
+			glVertex3f(Boulder[i].Point[7][0], Boulder[i].Point[7][1], 0);			
+			glEnd();
+		}
+	}
 }
 
 bool equalRound(double a, double b, double round)
@@ -123,6 +153,45 @@ void debugRenderPoint(double x, double y)
 	glEnd();
 }
 
+
+
+void instantiateBoulder()
+{
+	if (Boulder.size() < 1)
+	{
+		Boulder.push_back(Boulders());
+	}
+
+	for (int i = 0; i < Boulder.size(); i++)
+	{
+		if (!Boulder[i].active)
+		{
+			Boulder[i].active = true;
+			Boulder[i].speed = (rand() % 300 + 100) / 1000;
+
+			Boulder[i].pos[0] = (rand() % 100 - 50) / 100;
+			Boulder[i].pos[1] = 0.9;
+
+			for (int j = 0; j <= sizeof(Boulder[i].Point) / sizeof(Boulder[i].Point[0]) ; j++)
+			{
+				double xcos = 4 * cos( (j * 45) *  3.14159265359 / 180);
+				double ysin = -3 * sin( (j * 45) *  3.14159265359 / 180);
+
+				double xDash = xcos - ysin;
+				Boulder[i].Point[j][0] = xDash / 10;
+
+				double xsin = 4 * sin( (j * 45) *  3.14159265359 / 180);
+				double ycos = -3 * cos( (j * 45) *  3.14159265359 / 180);
+
+				double yDash = xsin + ycos;
+				Boulder[i].Point[j][1] = yDash/ 10;
+
+				printf("Point %d: X: %lf Y: %lf\n", j, xDash, yDash);
+			}
+		}
+	}
+}
+ 
 void instantiateBullet()
 {
 	bullets.push_back(Bullet());
@@ -202,7 +271,6 @@ void QuickUpdate()
 			RightP[i].WallVal.slope = slopeR;
 			RightP[i].WallVal.b = bR;
 
-			slopeR == 0 ? 0.01 : slopeR;
 
 			//debugRenderPoint(x, y);
 
@@ -217,7 +285,6 @@ void QuickUpdate()
 
 			double slopeL = (LeftP[i].pos[1] - LeftP[i - 1].pos[1]) / (LeftP[i].pos[0] - LeftP[i - 1].pos[0]);
 			double bL = LeftP[i].pos[1] - (slopeL * LeftP[i].pos[0]);
-			slopeL == 0 ? 0.01 : slopeL;
 
 			LeftP[i].WallVal.slope = slopeL;
 			LeftP[i].WallVal.b = bL;
@@ -254,12 +321,27 @@ void GenWalls(double wallMoveSpeed)
 			{
 				double rnd = rand() % 300;
 				rnd = rnd / 1000;
-				RightP[i].pos[0] = 0.95 - rnd;	 
+
+				while (equalRound(RightP[i - 1].pos[0], 0.95 - rnd, 0.01))
+				{
+					rnd = rand() % 300;
+					rnd = rnd / 1000;
+				}
+
+				RightP[i].pos[0] = 0.95 - rnd;
+				
 			}
 			if (!LeftP[i].active)
 			{
 				double rnd = rand() % 300;
 				rnd = rnd / 1000;
+
+				while (equalRound(LeftP[i - 1].pos[0], rnd - 0.95, 0.01))
+				{
+					rnd = rand() % 300;
+					rnd = rnd / 1000;
+				}
+
 				LeftP[i].pos[0] =rnd - 0.95;
 			}
 			RightP[i].pos[1] = RightP[i - 1].pos[1] + wallDistY;
@@ -304,12 +386,15 @@ void Update()
 		}
 	}
 #pragma endregion
+
+	instantiateBoulder();
 	GenWalls(0.005);
 	bulletController();
 }
 
 int main(void)
 {
+	
 	srand(time(NULL));
 	GLFWwindow* window;
 
