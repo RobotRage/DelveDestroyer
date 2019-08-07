@@ -55,7 +55,7 @@ struct Boulders
 {
 	bool active = false;
 	double pos[1];
-	GLfloat Point[8][1];
+	GLfloat Point[8][2];
 	double speed;
 };
 
