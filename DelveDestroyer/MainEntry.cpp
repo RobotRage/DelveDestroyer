@@ -182,7 +182,10 @@ void BoulderController()
 				{
 					if (((Player.pos[0] >= Boulder[i].Point[4][0] && Player.pos[0] <= Boulder[i].Point[0][0]) && (Player.pos[1] >= Boulder[i].Point[6][1] && Player.pos[1] <= Boulder[i].Point[2][1])))
 					{
-						CollisionController();
+						if (Boulder[i].active)
+						{
+							CollisionController();
+						}						
 						//bullets.erase(bullets.begin() + i);
 					}
 					else if (equalRound(Player.pos[0], Boulder[i].Point[4][0], 0.001) && (equalRound(Player.pos[1], Boulder[i].Point[4][1], 0.001)))
