@@ -18,6 +18,8 @@ bool shootPossible = false;
 
 bool hit = false;
 
+
+
 struct Player
 {
 	double pos[2];			//0 = position x, 1 = position y
@@ -185,11 +187,11 @@ void BoulderController()
 					}
 					else if (equalRound(Player.pos[0], Boulder[i].Point[4][0], 0.001) && (equalRound(Player.pos[1], Boulder[i].Point[4][1], 0.001)))
 					{
-						CollisionController();
+						//CollisionController();
 					}
 					else if (equalRound(Player.pos[1], Boulder[i].Point[6][1], 0.001) && (equalRound(Player.pos[1], Boulder[i].Point[2][1], 0.001)))
 					{
-						CollisionController();
+						//CollisionController();
 					}
 				}
 			}
@@ -270,7 +272,8 @@ void bulletController()
 		}
 		if (bullets[i].pos[1] >= 1)
 		{
-			bullets.erase(bullets.begin() + i);
+			//bullets.erase(bullets.begin() + i);
+			bullets[i].active = false;
 			break;
 		}	
 	}
@@ -321,7 +324,8 @@ void QuickUpdate()
 			{
 				if ((bullets[i].pos[0] >= RightP[j].pos[0] && bullets[i].pos[0] <= RightP[j - 1].pos[0]) | (bullets[i].pos[0] <= RightP[j].pos[0] && bullets[i].pos[0] >= RightP[j - 1].pos[0]))
 				{
-					bullets.erase(bullets.begin() + i);
+					bullets[i].active = false;
+					//bullets.erase(bullets.begin() + i);
 					break;
 				}
 			}
@@ -329,7 +333,8 @@ void QuickUpdate()
 			{
 				if ((bullets[i].pos[0] >= LeftP[j].pos[0] && bullets[i].pos[0] <= LeftP[j - 1].pos[0]) | (bullets[i].pos[0] <= LeftP[j].pos[0] && bullets[i].pos[0] >= LeftP[j - 1].pos[0]))
 				{
-					bullets.erase(bullets.begin() + i);
+					//bullets.erase(bullets.begin() + i);
+					bullets[i].active = false;
 					break;
 				}
 			}
@@ -381,6 +386,10 @@ void QuickUpdate()
 			}
 		}
 	}
+}
+void newWave()
+{
+
 }
 
 void GenWalls(double wallMoveSpeed)
