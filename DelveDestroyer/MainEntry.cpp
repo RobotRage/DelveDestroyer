@@ -7,7 +7,7 @@
 #include <array>
 #include <time.h>  
 #include <ctype.h>
-#include <Windows.h>
+#include <windows.h>
 #include <vector>
 
 
@@ -15,10 +15,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 bool shoot = false;
 bool shootPossible = false;
-
 bool hit = false;
 
 
+double speedMulti = 0;
 
 struct Player
 {
@@ -39,7 +39,6 @@ struct WallPoints
 		double slope;
 		double b;
 	}WallVal;
-
 };
 std::vector<WallPoints> LeftP;
 std::vector<WallPoints> RightP;
@@ -63,10 +62,10 @@ struct Boulders
 	double slope;
 	double b;
 };
-
 std::vector<Boulders> Boulder;
 void CollisionController()
 {
+	speedMulti = 0;
 	hit = true;
 	Player.pos[0] = 0;
 	Player.pos[1] = -0.7;
@@ -81,7 +80,6 @@ void RenderObjects()
 	if (hit)
 	{
 		//glColor3f(1.0, .0, 0);
-
 	}
 	else
 	{
@@ -130,8 +128,7 @@ void RenderObjects()
 	{
 		if (Boulder[i].active)
 		{
-			
-			glBegin(GL_LINE_STRIP);			
+			glBegin(GL_LINE_STRIP);
 			glVertex3f(Boulder[i].Point[0][0], Boulder[i].Point[0][1], 0);
 			glVertex3f(Boulder[i].Point[1][0], Boulder[i].Point[1][1], 0);
 			glVertex3f(Boulder[i].Point[2][0], Boulder[i].Point[2][1], 0);
@@ -139,7 +136,7 @@ void RenderObjects()
 			glVertex3f(Boulder[i].Point[4][0], Boulder[i].Point[4][1], 0);
 			glVertex3f(Boulder[i].Point[5][0], Boulder[i].Point[5][1], 0);
 			glVertex3f(Boulder[i].Point[6][0], Boulder[i].Point[6][1], 0);
-			glVertex3f(Boulder[i].Point[7][0], Boulder[i].Point[7][1], 0);		
+			glVertex3f(Boulder[i].Point[7][0], Boulder[i].Point[7][1], 0);
 			glVertex3f(Boulder[i].Point[0][0], Boulder[i].Point[0][1], 0);
 			glEnd();
 		}
@@ -185,9 +182,10 @@ void BoulderController()
 						if (Boulder[i].active)
 						{
 							CollisionController();
-						}						
-						//bullets.erase(bullets.begin() + i);
+						}
+						//bullets.erase(bullets.begin() + i);CollisionControllerCollisionController
 					}
+					/*
 					else if (equalRound(Player.pos[0], Boulder[i].Point[4][0], 0.001) && (equalRound(Player.pos[1], Boulder[i].Point[4][1], 0.001)))
 					{
 						//CollisionController();
@@ -195,10 +193,10 @@ void BoulderController()
 					else if (equalRound(Player.pos[1], Boulder[i].Point[6][1], 0.001) && (equalRound(Player.pos[1], Boulder[i].Point[2][1], 0.001)))
 					{
 						//CollisionController();
-					}
+					}*/
 				}
 			}
-			Boulder[i].Point[j][1] = Boulder[i].Point[j][1] - Boulder[i].speed;
+			Boulder[i].Point[j][1] = Boulder[i].Point[j][1] - (Boulder[i].speed + speedMulti);
 
 			if (Boulder[i].Point[j][1] < -1.3)
 			{
@@ -212,12 +210,11 @@ void instantiateBoulder()
 {
 	if (Boulder.size() < 10)
 	{
-		Boulder.push_back(Boulders()); 
+		Boulder.push_back(Boulders());
 		for (int i = 0; i < Boulder.size(); i++)
 		{
 			if (!Boulder[i].active)
 			{
-
 				Boulder[i].active = true;
 
 				double pos = rand() % 100 - 50;
@@ -243,7 +240,7 @@ void instantiateBoulder()
 		}
 	}
 }
- 
+
 void instantiateBullet()
 {
 	bullets.push_back(Bullet());
@@ -278,7 +275,7 @@ void bulletController()
 			//bullets.erase(bullets.begin() + i);
 			bullets[i].active = false;
 			break;
-		}	
+		}
 	}
 }
 
@@ -299,24 +296,35 @@ void QuickUpdate()
 					if (equalRound(bullets[i].pos[1], (slopeR * (bullets[i].pos[0]) + bR), 0.10))
 					{
 						//printf("2 %lf  :  6 %lf\n", Boulder[f].Point[2][1], Boulder[f].Point[6][1]);
-		
-						if (   ((bullets[i].pos[0] >= Boulder[f].Point[4][0] && bullets[i].pos[0] <= Boulder[f].Point[0][0]) && (bullets[i].pos[1] >= Boulder[f].Point[6][1] && bullets[i].pos[1] <= Boulder[f].Point[2][1]) ) )
+
+						if (((bullets[i].pos[0] >= Boulder[f].Point[4][0] && bullets[i].pos[0] <= Boulder[f].Point[0][0]) && (bullets[i].pos[1] >= Boulder[f].Point[6][1] && bullets[i].pos[1] <= Boulder[f].Point[2][1])))
 						{
-							Boulder[f].active = false;
-							//bullets.erase(bullets.begin() + i);
-							bullets[i].active = false;
-							break;
+							if (Boulder[f].active)
+							{
+								Boulder[f].active = false;
+								//bullets.erase(bullets.begin() + i);
+								bullets[i].active = false;
+								break;
+							}
 						}
-						else if(equalRound(bullets[i].pos[0], Boulder[f].Point[4][0], 0.05) && (equalRound(bullets[i].pos[1], Boulder[f].Point[4][1], 0.05)))
+						else if (equalRound(bullets[i].pos[0], Boulder[f].Point[4][0], 0.05) && (equalRound(bullets[i].pos[1], Boulder[f].Point[4][1], 0.05)))
 						{
-							Boulder[f].active = false;
-							break;
+							if (Boulder[f].active)
+							{
+								Boulder[f].active = false;
+								bullets[i].active = false;
+								break;
+							}
 						}
 						else if (equalRound(bullets[i].pos[1], Boulder[f].Point[6][1], 0.05) && (equalRound(bullets[i].pos[1], Boulder[f].Point[2][1], 0.05)))
 						{
-							Boulder[f].active = false;
+							if (Boulder[f].active)
+							{
+								Boulder[f].active = false;
+								bullets[i].active = false;
+							}
 						}
-					}					
+					}
 				}
 			}
 		}
@@ -332,7 +340,7 @@ void QuickUpdate()
 					break;
 				}
 			}
-			else if(equalRound(bullets[i].pos[1], (LeftP[j].WallVal.slope * (bullets[i].pos[0]) + LeftP[j].WallVal.b), 0.10) && j != 0)
+			else if (equalRound(bullets[i].pos[1], (LeftP[j].WallVal.slope * (bullets[i].pos[0]) + LeftP[j].WallVal.b), 0.10) && j != 0)
 			{
 				if ((bullets[i].pos[0] >= LeftP[j].pos[0] && bullets[i].pos[0] <= LeftP[j - 1].pos[0]) | (bullets[i].pos[0] <= LeftP[j].pos[0] && bullets[i].pos[0] >= LeftP[j - 1].pos[0]))
 				{
@@ -343,12 +351,13 @@ void QuickUpdate()
 			}
 		}
 
-		
+
 		if (!bullets[i].active)
 		{
 			bullets.erase(bullets.begin() + i);
 			break;
 		}
+
 	}
 	for (int i = 0; i < RightP.size(); i++)
 	{
@@ -364,11 +373,12 @@ void QuickUpdate()
 
 
 			//debugRenderPoint(x, y);
-
+			double roundA = 0.01;
 			//calculate if player hitting any walls
-			if (equalRound(y, (slopeR * (x - 0.05) + bR), 0.02) | equalRound(y, (slopeR * (x + 0.05) + bR), 0.02) | equalRound(y + 0.09, (slopeR * x + bR), 0.02))
+			double addsub = 0.02;
+			if (equalRound(y, (slopeR * (x - 0.05) + bR), roundA) | equalRound(y, (slopeR * (x + 0.05) + bR), roundA) | equalRound(y + 0.09, (slopeR * x + bR), roundA))
 			{
-				if ( ( (Player.pos[1] >= RightP[i - 1].pos[1]) && (Player.pos[1] <= RightP[i].pos[1]) ) | ( (Player.pos[1] <= RightP[i - 1].pos[1]) && (Player.pos[1] >= RightP[i].pos[1])) )
+				if (((Player.pos[1] - addsub >= RightP[i - 1].pos[1]) && (Player.pos[1] + addsub <= RightP[i].pos[1])) | ((Player.pos[1] + addsub <= RightP[i - 1].pos[1]) && (Player.pos[1] - addsub >= RightP[i].pos[1])))
 				{
 					CollisionController();
 				}
@@ -380,9 +390,9 @@ void QuickUpdate()
 			LeftP[i].WallVal.slope = slopeL;
 			LeftP[i].WallVal.b = bL;
 
-			if (equalRound(y, (slopeL * (x - 0.05) + bL), 0.02) | equalRound(y, (slopeL * (x + 0.05) + bL), 0.02) | equalRound(y + 0.09, (slopeL * x + bL), 0.02))
+			if (equalRound(y, (slopeL * (x - 0.05) + bL), roundA) | equalRound(y, (slopeL * (x + 0.05) + bL), roundA) | equalRound(y + 0.09, (slopeL * x + bL), roundA))
 			{
-				if ( ( (Player.pos[1] >= LeftP[i - 1].pos[1]) && (Player.pos[1] <= LeftP[i].pos[1]) )|( (Player.pos[1] <= LeftP[i - 1].pos[1]) && (Player.pos[1] >= LeftP[i].pos[1])))
+				if (((Player.pos[1] >= LeftP[i - 1].pos[1]) && (Player.pos[1] <= LeftP[i].pos[1])) | ((Player.pos[1] <= LeftP[i - 1].pos[1]) && (Player.pos[1] >= LeftP[i].pos[1])))
 				{
 					CollisionController();
 				}
@@ -397,9 +407,9 @@ void newWave()
 
 void GenWalls(double wallMoveSpeed)
 {
-	double wallDistY = 0.2;
+	double wallDistY = 0.1;
 
-	if (RightP.size() < 12)
+	if (RightP.size() < 30)
 	{
 		RightP.push_back(WallPoints());
 		LeftP.push_back(WallPoints());
@@ -411,33 +421,31 @@ void GenWalls(double wallMoveSpeed)
 		LeftP[i].pos[1] -= wallMoveSpeed;
 
 		if (i != 0)
-		{		
+		{
 			if (!RightP[i].active)
 			{
-				double rnd = rand() % 300;
+				double rnd = rand() % 200;
 				rnd = rnd / 1000;
 
-				while (equalRound(RightP[i - 1].pos[0], 0.95 - rnd, 0.01))
+				while (equalRound(RightP[i - 1].pos[0], 0.85 - rnd, 0.01))
 				{
-					rnd = rand() % 300;
+					rnd = rand() % 200;
 					rnd = rnd / 1000;
 				}
-
-				RightP[i].pos[0] = 0.95 - rnd;
-				
+				RightP[i].pos[0] = 0.85 - rnd;
 			}
 			if (!LeftP[i].active)
 			{
-				double rnd = rand() % 300;
+				double rnd = rand() % 200;
 				rnd = rnd / 1000;
 
-				while (equalRound(LeftP[i - 1].pos[0], rnd - 0.95, 0.01))
+				while (equalRound(LeftP[i - 1].pos[0], rnd - 0.85, 0.01))
 				{
-					rnd = rand() % 300;
+					rnd = rand() % 200;
 					rnd = rnd / 1000;
 				}
 
-				LeftP[i].pos[0] =rnd - 0.95;
+				LeftP[i].pos[0] = rnd - 0.85;
 			}
 			RightP[i].pos[1] = RightP[i - 1].pos[1] + wallDistY;
 			RightP[i].active = true;
@@ -445,11 +453,11 @@ void GenWalls(double wallMoveSpeed)
 			LeftP[i].pos[1] = LeftP[i - 1].pos[1] + wallDistY;
 			LeftP[i].active = true;
 
-			if (RightP[i - 1].pos[1] <= - 1 - wallDistY | LeftP[i - 1].pos[1] <= -1 - wallDistY)
+			if (RightP[i - 1].pos[1] <= -1 - wallDistY | LeftP[i - 1].pos[1] <= -1 - wallDistY)
 			{
-				RightP.erase(RightP.begin() + i -1 );
-				LeftP.erase(LeftP.begin() + i -1 );            
-				break;			
+				RightP.erase(RightP.begin() + i - 1);
+				LeftP.erase(LeftP.begin() + i - 1);
+				break;
 			}
 		}
 	}
@@ -471,25 +479,27 @@ void Update()
 		}
 		if (Player.move[2])
 		{
-			if(Player.pos[1] > -1)
+			if (Player.pos[1] > -1)
 				Player.pos[1] -= Player.speed;
 		}
 		if (Player.move[3])
 		{
-			if(Player.pos[1] < 1 - control.Triangle[1])
+			if (Player.pos[1] < 1 - control.Triangle[1])
 				Player.pos[1] += Player.speed;
 		}
 	}
 #pragma endregion
+
+
 	BoulderController();
 	instantiateBoulder();
-	GenWalls(0.005);
+	GenWalls(0.01 + speedMulti);
 	bulletController();
+	speedMulti += 0.000001;
 }
 
-int main(void)
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
-	
 	srand(time(NULL));
 	GLFWwindow* window;
 
@@ -552,10 +562,9 @@ int main(void)
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-	
+
 		if (lastTime > updateTime)
 		{
-			
 			Update();
 			updateTime = lastTime + updateDel;
 		}
@@ -580,7 +589,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 #pragma region
 
-	if (key == 263 | key == 65 && action == GLFW_REPEAT | action == GLFW_PRESS) 
+	if (key == 263 | key == 65 && action == GLFW_REPEAT | action == GLFW_PRESS)
 	{
 		Player.move[0] = true;
 	}
@@ -589,7 +598,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		Player.move[0] = false;
 	}
 
-	if (key == 262 | key == 68 && action == GLFW_REPEAT | action == GLFW_PRESS) 
+	if (key == 262 | key == 68 && action == GLFW_REPEAT | action == GLFW_PRESS)
 	{
 		Player.move[1] = true;
 	}
@@ -598,16 +607,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		Player.move[1] = false;
 	}
 
-	if (key == 265 | key == 87 && action == GLFW_REPEAT | action == GLFW_PRESS) 
+	if (key == 265 | key == 87 && action == GLFW_REPEAT | action == GLFW_PRESS)
 	{
 		Player.move[3] = true;
 	}
-	else if (key == 265 | key == 87 && action == GLFW_RELEASE) 
+	else if (key == 265 | key == 87 && action == GLFW_RELEASE)
 	{
 		Player.move[3] = false;
 	}
 
-	if (key == 264 | key == 83 && action == GLFW_REPEAT | action == GLFW_PRESS) 
+	if (key == 264 | key == 83 && action == GLFW_REPEAT | action == GLFW_PRESS)
 	{
 		Player.move[2] = true;
 	}
@@ -618,12 +627,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 	if (key == 32 && action == GLFW_PRESS)
 	{
-		instantiateBullet();		
+		instantiateBullet();
 	}
-	else if (key == 32 && action == GLFW_RELEASE)
-	{
-	}
-
 #pragma endregion Movement Input
-
 }
